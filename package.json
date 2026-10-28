@@ -1,0 +1,14 @@
+{
+  "name": "cip-website-local",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Grupo CIP static website with a local SQL Server backend",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "mssql": "^11.0.1",
+    "msnodesqlv8": "^4.2.1"
+  }
+}

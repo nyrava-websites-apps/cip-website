@@ -18,16 +18,25 @@ jobs:
       - name: Restore website files
         shell: bash
         run: |
+          set -euxo pipefail
           rm -rf restored dist
           mkdir -p restored dist
-          unzip -q -o cip-snapshot-01.zip -d restored
+          file cip-snapshot-01.zip
+          ls -lh cip-snapshot-01.zip
+          python - <<'PY'
+          from zipfile import ZipFile
+          with ZipFile("cip-snapshot-01.zip") as archive:
+              print("Archive entries:", len(archive.namelist()))
+              archive.extractall("restored")
+          PY
 
           if [ -d "restored/dist" ]; then
             cp -a restored/dist/. dist/
           else
             index_file="$(find restored -type f -name index.html | head -n 1)"
             if [ -z "$index_file" ]; then
-              echo "No index.html found in cip-snapshot-01.zip"
+              echo "No index.html found after extraction"
+              find restored -maxdepth 3 -type f | head -n 100
               exit 1
             fi
             root_dir="$(dirname "$index_file")"

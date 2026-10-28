@@ -21,8 +21,6 @@ jobs:
           set -euxo pipefail
           rm -rf restored dist
           mkdir -p restored dist
-          file cip-snapshot-01.zip
-          ls -lh cip-snapshot-01.zip
           python - <<'PY'
           from zipfile import ZipFile
           with ZipFile("cip-snapshot-01.zip") as archive:
@@ -33,14 +31,32 @@ jobs:
           if [ -d "restored/dist" ]; then
             cp -a restored/dist/. dist/
           else
-            index_file="$(find restored -type f -name index.html | head -n 1)"
-            if [ -z "$index_file" ]; then
-              echo "No index.html found after extraction"
-              find restored -maxdepth 3 -type f | head -n 100
+            cp -a restored/. dist/
+          fi
+
+          if [ ! -f dist/index.html ]; then
+            target="$(find dist -type f -path '*/index.html' | sort | head -n 1)"
+            if [ -n "$target" ]; then
+              target="/${target#dist/}"
+              cat > dist/index.html <<EOF
+          <!doctype html>
+          <html lang="es">
+          <head>
+            <meta charset="utf-8">
+            <meta name="viewport" content="width=device-width,initial-scale=1">
+            <meta http-equiv="refresh" content="0;url=$target">
+            <title>Grupo CIP</title>
+          </head>
+          <body>
+            <p><a href="$target">Entrar al sitio Grupo CIP</a></p>
+          </body>
+          </html>
+          EOF
+            else
+              echo "No HTML entry point found in snapshot"
+              find dist -maxdepth 4 -type f | head -n 100
               exit 1
             fi
-            root_dir="$(dirname "$index_file")"
-            cp -a "$root_dir"/. dist/
           fi
 
           test -f dist/index.html

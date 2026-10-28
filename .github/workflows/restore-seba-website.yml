@@ -72,5 +72,7 @@ jobs:
             echo "No changes to commit."
           else
             git commit -m "Restore SeBa website into dist"
-            git push
+            git fetch origin main
+            git rebase origin/main
+            git push origin HEAD:main
           fi

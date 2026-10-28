@@ -1,4 +1,5 @@
 const http = require("http");
+const https = require("https");
 const fs = require("fs");
 const path = require("path");
 const sql = require("mssql/msnodesqlv8");
@@ -26,6 +27,19 @@ function getPool() {
 function send(res, status, body, type = "application/json") {
   res.writeHead(status, { "Content-Type": type, "Cache-Control": "no-store" });
   res.end(type === "application/json" ? JSON.stringify(body) : body);
+}
+
+function proxyLive(req, res, url) {
+  const upstream = https.get(`https://seba.nyrava.com${url.pathname}${url.search}`, {
+    headers: { "User-Agent": "Grupo-CIP-local-preview" }
+  }, response => {
+    res.writeHead(response.statusCode || 502, {
+      "Content-Type": response.headers["content-type"] || "application/octet-stream",
+      "Cache-Control": "no-store"
+    });
+    response.pipe(res);
+  });
+  upstream.on("error", error => send(res, 502, { error: error.message }));
 }
 
 function readBody(req) {
@@ -100,7 +114,7 @@ async function handle(req, res) {
   if (!filePath.startsWith(DIST)) return send(res, 403, { error: "Forbidden" });
 
   fs.stat(filePath, (statError, stat) => {
-    if (statError || !stat.isFile()) return send(res, 404, "Not found", "text/plain; charset=utf-8");
+    if (statError || !stat.isFile()) return proxyLive(req, res, url);
     fs.readFile(filePath, (readError, data) => {
       if (readError) return send(res, 500, "Read error", "text/plain; charset=utf-8");
       if (path.extname(filePath).toLowerCase() === ".html") {
